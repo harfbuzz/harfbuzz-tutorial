@@ -100,7 +100,7 @@ main(int argc, char **argv)
   cairo_font_extents (cr, &font_extents);
   cairo_translate (cr, 0, font_extents.ascent);
 
-  cairo_glyph_t *cairo_glyphs = calloc (len, sizeof (cairo_glyph_t));
+  cairo_glyph_t *cairo_glyphs = cairo_glyph_allocate (len);
   double current_x = 0;
   for (unsigned int i = 0; i < len; i++)
   {
@@ -110,6 +110,7 @@ main(int argc, char **argv)
     current_x += positions[i].x_advance / 64.;
   }
   cairo_show_glyphs (cr, cairo_glyphs, len);
+  cairo_glyph_free (cairo_glyphs);
 
   cairo_surface_write_to_png (cairo_surface, "out.png");
 
