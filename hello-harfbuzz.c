@@ -61,8 +61,9 @@ main(int argc, char **argv)
 
     char glyphname[32];
     hb_font_get_glyph_name (hb_font, info->codepoint, glyphname, sizeof (glyphname));
-    printf ("glyph '%s' x-advance %g offset %g,%g\n",
+    printf ("glyph '%s'	cluster %d	x-advance %4.2g offset %g,%g\n",
             glyphname,
+	    info->cluster,
 	    pos->x_advance / 64.,
 	    pos->x_offset / 64.,
 	    pos->y_offset / 64.);
