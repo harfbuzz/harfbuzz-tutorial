@@ -55,7 +55,8 @@ main(int argc, char **argv)
   hb_glyph_info_t *info = hb_buffer_get_glyph_infos (hb_buffer, NULL);
   hb_glyph_position_t *pos = hb_buffer_get_glyph_positions (hb_buffer, NULL);
 
-  /* Print them out. */
+  /* Print them out as is. */
+  printf ("Raw buffer contents:\n");
   for (unsigned int i = 0; i < len; i++)
   {
     hb_codepoint_t gid   = info[i].codepoint;
@@ -70,6 +71,30 @@ main(int argc, char **argv)
 
     printf ("glyph='%s'	cluster=%d	advance=(%g,%g)	offset=(%g,%g)\n",
             glyphname, cluster, x_advance, y_advance, x_offset, y_offset);
+  }
+
+  printf ("Converted to absolute positions:\n");
+  /* And converted to absolute positions. */
+  {
+    double current_x = 0;
+    double current_y = 0;
+    for (unsigned int i = 0; i < len; i++)
+    {
+      hb_codepoint_t gid   = info[i].codepoint;
+      unsigned int cluster = info[i].cluster;
+      double x_position = current_x + pos[i].x_offset / 64.;
+      double y_position = current_y + pos[i].y_offset / 64.;
+
+
+      char glyphname[32];
+      hb_font_get_glyph_name (hb_font, gid, glyphname, sizeof (glyphname));
+
+      printf ("glyph='%s'	cluster=%d	position=(%g,%g)\n",
+	      glyphname, cluster, x_position, y_position);
+
+      current_x += pos[i].x_advance / 64.;
+      current_y += pos[i].y_advance / 64.;
+    }
   }
 
   /* Draw, using cairo. */
@@ -101,12 +126,14 @@ main(int argc, char **argv)
 
   cairo_glyph_t *cairo_glyphs = cairo_glyph_allocate (len);
   double current_x = 0;
+  double current_y = 0;
   for (unsigned int i = 0; i < len; i++)
   {
     cairo_glyphs[i].index = info[i].codepoint;
-    cairo_glyphs[i].x = pos[i].x_offset / 64. + current_x;
-    cairo_glyphs[i].y = pos[i].y_offset / 64.;
+    cairo_glyphs[i].x = current_x + pos[i].x_offset / 64.;
+    cairo_glyphs[i].y = current_y + pos[i].y_offset / 64.;
     current_x += pos[i].x_advance / 64.;
+    current_y += pos[i].y_advance / 64.;
   }
   cairo_show_glyphs (cr, cairo_glyphs, len);
   cairo_glyph_free (cairo_glyphs);
