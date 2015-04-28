@@ -24,7 +24,6 @@ main(int argc, char **argv)
   fontfile = argv[1];
   text = argv[2];
 
-
   /* Initialize FreeType and create FreeType font face. */
   FT_Library ft_library;
   FT_Face ft_face;
@@ -99,13 +98,22 @@ main(int argc, char **argv)
 
   /* Draw, using cairo. */
   double width = 2 * MARGIN;
-  double height = 2 * MARGIN + FONT_SIZE;
+  double height = 2 * MARGIN;
   for (unsigned int i = 0; i < len; i++)
-    width += pos[i].x_advance / 64.;
+  {
+    width  += pos[i].x_advance / 64.;
+    height -= pos[i].y_advance / 64.;
+  }
+  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
+    height += FONT_SIZE;
+  else
+    width  += FONT_SIZE;
 
   /* Set up cairo surface. */
   cairo_surface_t *cairo_surface;
-  cairo_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, ceil(width), ceil(height));
+  cairo_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+					      ceil(width),
+					      ceil(height));
   cairo_t *cr;
   cr = cairo_create (cairo_surface);
   cairo_set_source_rgba (cr, 1., 1., 1., 1.);
@@ -120,9 +128,17 @@ main(int argc, char **argv)
   cairo_set_font_size (cr, FONT_SIZE);
 
   /* Set up baseline. */
-  cairo_font_extents_t font_extents;
-  cairo_font_extents (cr, &font_extents);
-  cairo_translate (cr, 0, font_extents.ascent);
+  if (HB_DIRECTION_IS_HORIZONTAL (hb_buffer_get_direction(hb_buffer)))
+  {
+    cairo_font_extents_t font_extents;
+    cairo_font_extents (cr, &font_extents);
+    double baseline = (FONT_SIZE - font_extents.height) * .5 + font_extents.ascent;
+    cairo_translate (cr, 0, baseline);
+  }
+  else
+  {
+    cairo_translate (cr, FONT_SIZE * .5, 0);
+  }
 
   cairo_glyph_t *cairo_glyphs = cairo_glyph_allocate (len);
   double current_x = 0;
@@ -131,7 +147,7 @@ main(int argc, char **argv)
   {
     cairo_glyphs[i].index = info[i].codepoint;
     cairo_glyphs[i].x = current_x + pos[i].x_offset / 64.;
-    cairo_glyphs[i].y = current_y + pos[i].y_offset / 64.;
+    cairo_glyphs[i].y = -(current_y + pos[i].y_offset / 64.);
     current_x += pos[i].x_advance / 64.;
     current_y += pos[i].y_advance / 64.;
   }
