@@ -50,34 +50,33 @@ main(int argc, char **argv)
   /* Shape it! */
   hb_shape (hb_font, hb_buffer, NULL, 0);
 
-  /* Print glyph names and positions out. */
-  unsigned int len;
-  hb_glyph_info_t *infos;
-  hb_glyph_position_t *positions;
-  len = hb_buffer_get_length (hb_buffer);
-  infos = hb_buffer_get_glyph_infos (hb_buffer, NULL);
-  positions = hb_buffer_get_glyph_positions (hb_buffer, NULL);
+  /* Get glyph information and positions out of the buffer. */
+  unsigned int len = hb_buffer_get_length (hb_buffer);
+  hb_glyph_info_t *info = hb_buffer_get_glyph_infos (hb_buffer, NULL);
+  hb_glyph_position_t *pos = hb_buffer_get_glyph_positions (hb_buffer, NULL);
 
+  /* Print them out. */
   for (unsigned int i = 0; i < len; i++)
   {
-    hb_glyph_info_t *info = &infos[i];
-    hb_glyph_position_t *pos = &positions[i];
+    hb_codepoint_t gid   = info[i].codepoint;
+    unsigned int cluster = info[i].cluster;
+    double x_advance = pos[i].x_advance / 64.;
+    double y_advance = pos[i].y_advance / 64.;
+    double x_offset  = pos[i].x_offset / 64.;
+    double y_offset  = pos[i].y_offset / 64.;
 
     char glyphname[32];
-    hb_font_get_glyph_name (hb_font, info->codepoint, glyphname, sizeof (glyphname));
-    printf ("glyph '%s'	cluster %d	x-advance %4.2g offset %g,%g\n",
-            glyphname,
-	    info->cluster,
-	    pos->x_advance / 64.,
-	    pos->x_offset / 64.,
-	    pos->y_offset / 64.);
+    hb_font_get_glyph_name (hb_font, gid, glyphname, sizeof (glyphname));
+
+    printf ("glyph='%s'	cluster=%d	advance=(%g,%g)	offset=(%g,%g)\n",
+            glyphname, cluster, x_advance, y_advance, x_offset, y_offset);
   }
 
   /* Draw, using cairo. */
   double width = 2 * MARGIN;
   double height = 2 * MARGIN + FONT_SIZE;
   for (unsigned int i = 0; i < len; i++)
-    width += positions[i].x_advance / 64.;
+    width += pos[i].x_advance / 64.;
 
   /* Set up cairo surface. */
   cairo_surface_t *cairo_surface;
@@ -104,10 +103,10 @@ main(int argc, char **argv)
   double current_x = 0;
   for (unsigned int i = 0; i < len; i++)
   {
-    cairo_glyphs[i].index = infos[i].codepoint;
-    cairo_glyphs[i].x = positions[i].x_offset / 64. + current_x;
-    cairo_glyphs[i].y = positions[i].y_offset / 64.;
-    current_x += positions[i].x_advance / 64.;
+    cairo_glyphs[i].index = info[i].codepoint;
+    cairo_glyphs[i].x = pos[i].x_offset / 64. + current_x;
+    cairo_glyphs[i].y = pos[i].y_offset / 64.;
+    current_x += pos[i].x_advance / 64.;
   }
   cairo_show_glyphs (cr, cairo_glyphs, len);
   cairo_glyph_free (cairo_glyphs);
