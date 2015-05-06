@@ -1,4 +1,4 @@
-PKGS = harfbuzz harfbuzz cairo-ft freetype2
+PKGS = harfbuzz cairo-ft freetype2
 
 CFLAGS = `pkg-config --cflags $(PKGS)`
 LDFLAGS = `pkg-config --libs $(PKGS)` -lm
