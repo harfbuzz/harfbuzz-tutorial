@@ -7,30 +7,6 @@
 #define FONT_SIZE 36
 #define MARGIN (FONT_SIZE * .5)
 
-/* Use native open type implementation to load font
-  https://github.com/harfbuzz/harfbuzz/issues/255 */
-hb_font_t*
-get_font_ot(const char *filename, int size)
-{
-  FILE* file = fopen(filename, "rb");
-  fseek(file, 0, SEEK_END);
-  unsigned int length = ftell(file);
-  fseek(file, 0, SEEK_SET);
-
-  char* data = malloc(length);
-  fread(data, length, 1, file);
-  fclose(file);
-
-  hb_blob_t* blob = hb_blob_create(data, length, HB_MEMORY_MODE_WRITABLE, (void*)data, NULL);
-  hb_face_t* face = hb_face_create(blob, 0);
-  hb_font_t* font = hb_font_create(face);
-
-  hb_ot_font_set_funcs(font);
-  hb_font_set_scale(font, size, size);
-
-  return font;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -46,9 +22,14 @@ main(int argc, char **argv)
   fontfile = argv[1];
   text = argv[2];
 
-  /* Create hb-ft font. */
-  hb_font_t *hb_font;
-  hb_font = get_font_ot (fontfile, FONT_SIZE*64);
+  /* Create a font. */
+  hb_blob_t* blob = hb_blob_create_from_file(argv[1]);
+  hb_face_t* hb_face = hb_face_create(blob, 0);
+  hb_blob_destroy(blob); /* face will keep a reference to it */
+  hb_font_t* hb_font = hb_font_create(hb_face);
+
+  hb_ot_font_set_funcs(hb_font);
+  hb_font_set_scale(hb_font, FONT_SIZE*64, FONT_SIZE*64);
 
   /* Create hb-buffer and populate. */
   hb_buffer_t *hb_buffer;
@@ -108,6 +89,7 @@ main(int argc, char **argv)
 
   hb_buffer_destroy (hb_buffer);
   hb_font_destroy (hb_font);
+  hb_face_destroy (hb_face);
 
   return 0;
 }
