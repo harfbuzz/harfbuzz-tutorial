@@ -9,8 +9,7 @@
 #define FONT_SIZE 36
 #define MARGIN (FONT_SIZE * .5)
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   const char *fontfile;
   const char *text;
